@@ -149,17 +149,3 @@ To add a new competitor for analysis:
 2. Create a new subdirectory with the competitor's name in the `competitors/` directory and place their sitemap XML files there
 
 Then run the analysis again using `npm run generate`
-
-## Troubleshooting
-
-If you encounter any issues with XML parsing:
-
-- Ensure the XML files are well-formed
-- Check for special characters or encoding issues in the files
-- Make sure the sitemap follows standard sitemap protocol format
-
-If the script fails with "Error: Failed to generate results":
-
-- Check the console output for more specific error messages
-- Verify that all dependencies are correctly installed
-- Ensure that the directories and files have proper permissions
