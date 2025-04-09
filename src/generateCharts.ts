@@ -151,25 +151,34 @@ async function generateSummaryChart(
     return;
   }
 
-  const width = Math.max(800, validCompetitors.length * 50);
-  const height = 500;
+  const width = Math.max(900, validCompetitors.length * 60);
+  const height = 600;
   const chartJSNodeCanvas = new ChartJSNodeCanvas({
     width,
     height,
     backgroundColour: "white",
   });
 
-  // Create a bar chart configuration
+  // Create a stacked bar chart configuration
   const configuration = {
     type: "bar" as const,
     data: {
       labels: validCompetitors.map((comp) => comp.competitorName),
       datasets: [
         {
-          label: "Dealspotr Overlap Percentage",
-          data: validCompetitors.map((comp) => comp.overlapPercentage),
+          label: "Matched with Dealspotr",
+          data: validCompetitors.map((comp) => comp.overlappingDomains),
           backgroundColor: "#4BC0C0",
           borderColor: "#3CB1B1",
+          borderWidth: 1,
+        },
+        {
+          label: "Not Matched with Dealspotr",
+          data: validCompetitors.map(
+            (comp) => comp.totalDomains - comp.overlappingDomains
+          ),
+          backgroundColor: "#FF6384",
+          borderColor: "#FF4D76",
           borderWidth: 1,
         },
       ],
@@ -178,7 +187,7 @@ async function generateSummaryChart(
       plugins: {
         title: {
           display: true,
-          text: "Dealspotr Domain Overlap Percentage by Competitor",
+          text: "Dealspotr Domain Overlap by Competitor",
           font: {
             size: 18,
           },
@@ -190,20 +199,37 @@ async function generateSummaryChart(
             size: 14,
           },
         },
-      },
-      scales: {
-        y: {
-          beginAtZero: true,
-          max: 100,
-          title: {
-            display: true,
-            text: "Percentage (%)",
+        tooltip: {
+          callbacks: {
+            footer: (tooltipItems: any) => {
+              const competitorName = tooltipItems[0].label;
+              const competitor = validCompetitors.find(
+                (c) => c.competitorName === competitorName
+              );
+              if (competitor) {
+                return `Match Rate: ${competitor.overlapPercentage.toFixed(
+                  2
+                )}%`;
+              }
+              return "";
+            },
           },
         },
+      },
+      scales: {
         x: {
+          stacked: true,
           title: {
             display: true,
             text: "Competitor",
+          },
+        },
+        y: {
+          stacked: true,
+          beginAtZero: true,
+          title: {
+            display: true,
+            text: "Number of Domains",
           },
         },
       },
@@ -225,6 +251,124 @@ async function generateSummaryChart(
   stream.end();
 
   console.log(`Generated summary chart at ${outputPath}`);
+
+  // Also generate the percentage-based summary chart
+  await generatePercentageSummaryChart(
+    validCompetitors,
+    analysisResult.dealsptrDomainsCount,
+    chartOutputDir
+  );
+}
+
+/**
+ * Generates a percentage-based summary chart
+ */
+async function generatePercentageSummaryChart(
+  competitors: CompetitorOverlap[],
+  dealsptrDomainCount: number,
+  outputDir: string
+): Promise<void> {
+  const width = Math.max(900, competitors.length * 60);
+  const height = 600;
+  const chartJSNodeCanvas = new ChartJSNodeCanvas({
+    width,
+    height,
+    backgroundColour: "white",
+  });
+
+  // Create a stacked percentage bar chart
+  const configuration = {
+    type: "bar" as const,
+    data: {
+      labels: competitors.map((comp) => comp.competitorName),
+      datasets: [
+        {
+          label: "Matched with Dealspotr (%)",
+          data: competitors.map((comp) => comp.overlapPercentage),
+          backgroundColor: "#4BC0C0",
+          borderColor: "#3CB1B1",
+          borderWidth: 1,
+        },
+        {
+          label: "Not Matched with Dealspotr (%)",
+          data: competitors.map((comp) => 100 - comp.overlapPercentage),
+          backgroundColor: "#FF6384",
+          borderColor: "#FF4D76",
+          borderWidth: 1,
+        },
+      ],
+    },
+    options: {
+      plugins: {
+        title: {
+          display: true,
+          text: "Dealspotr Domain Overlap Percentage by Competitor",
+          font: {
+            size: 18,
+          },
+        },
+        subtitle: {
+          display: true,
+          text: `Dealspotr Total Domains: ${dealsptrDomainCount}`,
+          font: {
+            size: 14,
+          },
+        },
+        tooltip: {
+          callbacks: {
+            label: (context: any) => {
+              const label = context.dataset.label || "";
+              const value = context.parsed.y;
+              return `${label}: ${value.toFixed(2)}%`;
+            },
+            footer: (tooltipItems: any) => {
+              const competitorName = tooltipItems[0].label;
+              const competitor = competitors.find(
+                (c) => c.competitorName === competitorName
+              );
+              if (competitor) {
+                return `Total Domains: ${competitor.totalDomains}`;
+              }
+              return "";
+            },
+          },
+        },
+      },
+      scales: {
+        x: {
+          stacked: true,
+          title: {
+            display: true,
+            text: "Competitor",
+          },
+        },
+        y: {
+          stacked: true,
+          beginAtZero: true,
+          max: 100,
+          title: {
+            display: true,
+            text: "Percentage (%)",
+          },
+        },
+      },
+      responsive: true,
+    },
+  };
+
+  // Generate chart image
+  const buffer = await chartJSNodeCanvas.renderToBuffer(configuration);
+  const outputPath = path.join(
+    outputDir,
+    "all-competitors-percentage-summary.png"
+  );
+
+  // Write image to file
+  const stream = createWriteStream(outputPath);
+  stream.write(buffer);
+  stream.end();
+
+  console.log(`Generated percentage summary chart at ${outputPath}`);
 }
 
 async function main() {
@@ -252,7 +396,7 @@ async function main() {
     }
 
     // Generate a summary chart
-    console.log("Generating summary chart...");
+    console.log("Generating summary charts...");
     await generateSummaryChart(analysisResult, outputDir);
 
     console.log("All charts generated successfully!");
