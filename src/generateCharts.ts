@@ -371,6 +371,139 @@ async function generatePercentageSummaryChart(
   console.log(`Generated percentage summary chart at ${outputPath}`);
 }
 
+/**
+ * Generates a bar chart showing total merchants per competitor
+ */
+async function generateTotalMerchantsChart(
+  analysisResult: AnalysisResult,
+  outputDir: string
+): Promise<void> {
+  // Skip if no competitors
+  if (analysisResult.competitors.length === 0) {
+    console.log("No competitors found for total merchants chart");
+    return;
+  }
+
+  // Include all competitors including Dealspotr
+  const allCompetitors = [...analysisResult.competitors];
+
+  // Add Dealspotr as a "competitor" for comparison
+  allCompetitors.push({
+    competitorName: "Dealspotr",
+    totalDomains: analysisResult.dealsptrDomainsCount,
+    overlappingDomains: analysisResult.dealsptrDomainsCount, // All domains match with itself
+    overlapPercentage: 100,
+  });
+
+  // Sort by total domains in descending order
+  const sortedCompetitors = allCompetitors
+    .filter((comp) => comp.totalDomains > 0)
+    .sort((a, b) => b.totalDomains - a.totalDomains);
+
+  // Skip if no valid competitors
+  if (sortedCompetitors.length === 0) {
+    console.log("No valid competitors found for total merchants chart");
+    return;
+  }
+
+  const width = Math.max(900, sortedCompetitors.length * 60);
+  const height = 600;
+  const chartJSNodeCanvas = new ChartJSNodeCanvas({
+    width,
+    height,
+    backgroundColour: "white",
+  });
+
+  // Create a bar chart configuration
+  const configuration = {
+    type: "bar" as const,
+    data: {
+      labels: sortedCompetitors.map((comp) => comp.competitorName),
+      datasets: [
+        {
+          label: "Total Merchant Domains",
+          data: sortedCompetitors.map((comp) => comp.totalDomains),
+          backgroundColor: sortedCompetitors.map((comp) =>
+            comp.competitorName === "Dealspotr" ? "#6A5ACD" : "#36A2EB"
+          ),
+          borderColor: sortedCompetitors.map((comp) =>
+            comp.competitorName === "Dealspotr" ? "#483D8B" : "#2980B9"
+          ),
+          borderWidth: 1,
+        },
+      ],
+    },
+    options: {
+      plugins: {
+        title: {
+          display: true,
+          text: "Total Merchant Domains by Sitemap Source",
+          font: {
+            size: 18,
+          },
+        },
+        subtitle: {
+          display: true,
+          text: "Comparison of merchant domain counts across all sources",
+          font: {
+            size: 14,
+          },
+        },
+        tooltip: {
+          callbacks: {
+            label: (context: any) => {
+              const value = context.raw;
+              return `Domains: ${value.toLocaleString()}`;
+            },
+          },
+        },
+        legend: {
+          display: false,
+        },
+      },
+      scales: {
+        x: {
+          title: {
+            display: true,
+            text: "Sitemap Source",
+          },
+        },
+        y: {
+          beginAtZero: true,
+          title: {
+            display: true,
+            text: "Number of Domains",
+          },
+          ticks: {
+            callback: function (value: any) {
+              if (value >= 1000) {
+                return value / 1000 + "k";
+              }
+              return value;
+            },
+          },
+        },
+      },
+      responsive: true,
+    },
+  };
+
+  // Create chart directory
+  const chartOutputDir = path.join(outputDir, "charts");
+  await fs.ensureDir(chartOutputDir);
+
+  // Generate chart image
+  const buffer = await chartJSNodeCanvas.renderToBuffer(configuration);
+  const outputPath = path.join(chartOutputDir, "total-merchants-by-source.png");
+
+  // Write image to file
+  const stream = createWriteStream(outputPath);
+  stream.write(buffer);
+  stream.end();
+
+  console.log(`Generated total merchants chart at ${outputPath}`);
+}
+
 async function main() {
   try {
     console.time("Chart generation time");
@@ -398,6 +531,10 @@ async function main() {
     // Generate a summary chart
     console.log("Generating summary charts...");
     await generateSummaryChart(analysisResult, outputDir);
+
+    // Generate total merchants chart
+    console.log("Generating total merchants chart...");
+    await generateTotalMerchantsChart(analysisResult, outputDir);
 
     console.log("All charts generated successfully!");
     console.timeEnd("Chart generation time");
