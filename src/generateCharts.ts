@@ -280,7 +280,10 @@ async function generatePercentageSummaryChart(
   const configuration = {
     type: "bar" as const,
     data: {
-      labels: competitors.map((comp) => comp.competitorName),
+      labels: competitors.map(
+        (comp) =>
+          `${comp.competitorName} (${Math.round(comp.overlapPercentage)}%)`
+      ),
       datasets: [
         {
           label: "Matched with Dealspotr (%)",
@@ -322,7 +325,8 @@ async function generatePercentageSummaryChart(
               return `${label}: ${value.toFixed(2)}%`;
             },
             footer: (tooltipItems: any) => {
-              const competitorName = tooltipItems[0].label;
+              const fullLabel = tooltipItems[0].label;
+              const competitorName = fullLabel.split(" (")[0]; // Extract name without percentage
               const competitor = competitors.find(
                 (c) => c.competitorName === competitorName
               );
