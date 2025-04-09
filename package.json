@@ -1,0 +1,32 @@
+{
+  "name": "merchantcomparison",
+  "version": "1.0.0",
+  "main": "dist/index.js",
+  "scripts": {
+    "build": "tsc",
+    "start": "node dist/index.js",
+    "dev": "ts-node src/index.ts",
+    "csv": "ts-node src/generateCSV.ts",
+    "charts": "ts-node src/generateCharts.ts",
+    "generate": "npm run build && rm -rf output && node dist/index.js && node dist/generateCSV.js && node dist/generateCharts.js || echo 'Error: Failed to generate results'",
+    "test": "echo \"Error: no test specified\" && exit 1"
+  },
+  "keywords": [],
+  "author": "",
+  "license": "ISC",
+  "description": "A tool to compare domains across different merchant sitemaps",
+  "dependencies": {
+    "@types/fs-extra": "^11.0.4",
+    "@types/glob": "^8.1.0",
+    "@types/node": "^20.11.25",
+    "canvas": "^2.11.2",
+    "chart.js": "^4.4.2",
+    "chartjs-node-canvas": "^4.1.6",
+    "csv-writer": "^1.6.0",
+    "fs-extra": "^11.2.0",
+    "glob": "^10.3.10",
+    "ts-node": "^10.9.2",
+    "typescript": "^5.3.3",
+    "xml-js": "^1.6.11"
+  }
+}
