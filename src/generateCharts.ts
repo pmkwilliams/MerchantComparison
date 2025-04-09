@@ -16,16 +16,16 @@ interface AnalysisResult {
 }
 
 /**
- * Generates a pie chart for a competitor showing the ratio of matched to not matched domains
+ * Generates a pie chart for a competitor showing the ratio of matched to not matched merchants
  */
 async function generatePieChart(
   competitor: CompetitorOverlap,
   outputDir: string
 ): Promise<void> {
-  // Skip if no domains
+  // Skip if no merchants
   if (competitor.totalDomains === 0) {
     console.log(
-      `Skipping chart for ${competitor.competitorName} - no domains found`
+      `Skipping chart for ${competitor.competitorName} - no merchants found`
     );
     return;
   }
@@ -59,14 +59,14 @@ async function generatePieChart(
       plugins: {
         title: {
           display: true,
-          text: `${competitor.competitorName} - Dealspotr Domain Match Ratio`,
+          text: `${competitor.competitorName} - Dealspotr Merchant Match Ratio`,
           font: {
             size: 16,
           },
         },
         subtitle: {
           display: true,
-          text: `Total Domains: ${
+          text: `Total Merchants: ${
             competitor.totalDomains
           } | Dealspotr Match Rate: ${competitor.overlapPercentage.toFixed(
             2
@@ -140,7 +140,7 @@ async function generateSummaryChart(
     return;
   }
 
-  // Filter out competitors with no domains
+  // Filter out competitors with no merchants
   const validCompetitors = analysisResult.competitors
     .filter((comp) => comp.totalDomains > 0)
     .sort((a, b) => b.overlapPercentage - a.overlapPercentage);
@@ -187,14 +187,14 @@ async function generateSummaryChart(
       plugins: {
         title: {
           display: true,
-          text: "Dealspotr Domain Overlap by Competitor",
+          text: "Dealspotr Merchant Overlap by Competitor",
           font: {
             size: 18,
           },
         },
         subtitle: {
           display: true,
-          text: `Dealspotr Total Domains: ${analysisResult.dealsptrDomainsCount}`,
+          text: `Dealspotr Total Merchants: ${analysisResult.dealsptrDomainsCount}`,
           font: {
             size: 14,
           },
@@ -229,7 +229,7 @@ async function generateSummaryChart(
           beginAtZero: true,
           title: {
             display: true,
-            text: "Number of Domains",
+            text: "Number of Merchants",
           },
         },
       },
@@ -305,14 +305,14 @@ async function generatePercentageSummaryChart(
       plugins: {
         title: {
           display: true,
-          text: "Dealspotr Domain Overlap Percentage by Competitor",
+          text: "Dealspotr Merchant Overlap Percentage by Competitor",
           font: {
             size: 18,
           },
         },
         subtitle: {
           display: true,
-          text: `Dealspotr Total Domains: ${dealsptrDomainCount}`,
+          text: `Dealspotr Total Merchants: ${dealsptrDomainCount}`,
           font: {
             size: 14,
           },
@@ -331,7 +331,7 @@ async function generatePercentageSummaryChart(
                 (c) => c.competitorName === competitorName
               );
               if (competitor) {
-                return `Total Domains: ${competitor.totalDomains}`;
+                return `Total Merchants: ${competitor.totalDomains}`;
               }
               return "";
             },
@@ -395,11 +395,11 @@ async function generateTotalMerchantsChart(
   allCompetitors.push({
     competitorName: "Dealspotr",
     totalDomains: analysisResult.dealsptrDomainsCount,
-    overlappingDomains: analysisResult.dealsptrDomainsCount, // All domains match with itself
+    overlappingDomains: analysisResult.dealsptrDomainsCount, // All merchants match with itself
     overlapPercentage: 100,
   });
 
-  // Sort by total domains in descending order
+  // Sort by total merchants in descending order
   const sortedCompetitors = allCompetitors
     .filter((comp) => comp.totalDomains > 0)
     .sort((a, b) => b.totalDomains - a.totalDomains);
@@ -425,7 +425,7 @@ async function generateTotalMerchantsChart(
       labels: sortedCompetitors.map((comp) => comp.competitorName),
       datasets: [
         {
-          label: "Total Merchant Domains",
+          label: "Total Merchant Sites",
           data: sortedCompetitors.map((comp) => comp.totalDomains),
           backgroundColor: sortedCompetitors.map((comp) =>
             comp.competitorName === "Dealspotr" ? "#6A5ACD" : "#36A2EB"
@@ -441,14 +441,14 @@ async function generateTotalMerchantsChart(
       plugins: {
         title: {
           display: true,
-          text: "Total Merchant Domains by Sitemap Source",
+          text: "Total Merchant Sites by Sitemap Source",
           font: {
             size: 18,
           },
         },
         subtitle: {
           display: true,
-          text: "Comparison of merchant domain counts across all sources",
+          text: "Comparison of merchant site counts across all sources",
           font: {
             size: 14,
           },
@@ -457,7 +457,7 @@ async function generateTotalMerchantsChart(
           callbacks: {
             label: (context: any) => {
               const value = context.raw;
-              return `Domains: ${value.toLocaleString()}`;
+              return `Merchants: ${value.toLocaleString()}`;
             },
           },
         },
@@ -476,7 +476,7 @@ async function generateTotalMerchantsChart(
           beginAtZero: true,
           title: {
             display: true,
-            text: "Number of Domains",
+            text: "Number of Merchants",
           },
           ticks: {
             callback: function (value: any) {
