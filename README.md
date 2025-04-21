@@ -11,11 +11,13 @@ This project analyzes sitemap files from Dealspotr and competitor websites to id
 - Create CSV files with detailed domain matches for each competitor
 - Generate pie charts showing the ratio of matched to unmatched domains for each competitor
 - Create a summary bar chart comparing overlap percentages across all competitors
+- Web scraper to extract content from specified URLs
 
 ## Prerequisites
 
 - Node.js (v16 or higher)
 - npm or yarn
+- Firecrawl API key for the web scraping functionality
 
 ## Installation
 
@@ -27,9 +29,14 @@ This project analyzes sitemap files from Dealspotr and competitor websites to id
    ```
 
 2. Install dependencies:
+
    ```bash
    npm install
    ```
+
+3. For web scraping functionality:
+   - Copy `.env.example` to `.env`
+   - Add your Firecrawl API key to the `.env` file
 
 ## Usage
 
@@ -72,6 +79,17 @@ npm run csv
 
 # Generate charts only (requires results from previous analysis)
 npm run charts
+
+# Scrape content from specific URLs
+npm run crawl "https://example.com" "https://anothersite.com"
+```
+
+### Usage
+
+Run the scraper with one or more URLs:
+
+```bash
+npm run crawl "https://example.com" "https://merchant.site/product-page"
 ```
 
 ## Input Data Structure

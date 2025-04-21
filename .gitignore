@@ -7,10 +7,9 @@ dist/
 *.tsbuildinfo
 
 # Editor directories and files
-.idea/
 .vscode/
-*.suo
-*.ntvs*
-*.njsproj
-*.sln
-*.sw?
+
+# Environment variables
+.env
+.env.*
+!.env.example
