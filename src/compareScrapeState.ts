@@ -9,6 +9,7 @@ import {
 } from "./sitemapParser";
 import { compareAllCompetitors } from "./comparison";
 import { AnalysisResult, CompetitorOverlap } from "./types";
+import { loadAffiliateData } from "./affiliateDataParser";
 
 interface MerchantRecord {
   url: string;
@@ -39,9 +40,11 @@ interface ComparisonRecord {
   Match_Status: string;
   Last_Segment: string;
   "3rd Party Link": boolean;
-  "Match URL": string;
-  dataId: string | null;
+  "Match domain": string;
+  "dealspotr URL": string;
   Merchant_Name: string | null;
+  "NAPM?": boolean;
+  "Affiliate ID": string | null;
 }
 
 /**
@@ -137,21 +140,29 @@ async function exportDomainsToCSV(
 function generateComparisonRecords(
   scrapeState: ScrapeState,
   dealsptrDomains: Set<string>,
-  dealsptrUrlMap: Map<string, string>
+  dealsptrUrlMap: Map<string, string>,
+  affiliateData: Map<string, string>
 ): ComparisonRecord[] {
   return scrapeState.merchantRecords
     .filter((record) => record.urlPath)
     .map((record) => {
       const domain = record.urlPath;
       const isMatched = dealsptrDomains.has(domain);
+      const dealspotrUrl = isMatched ? dealsptrUrlMap.get(domain) || "" : "";
+
+      const isNapm = !affiliateData.has(domain);
+      const affiliateId = !isNapm ? affiliateData.get(domain) || null : null;
+
       return {
         URL: record.url,
         Match_Status: isMatched ? "Matched" : "Not Matched",
         Last_Segment: domain,
         "3rd Party Link": record.hasAmazonDeal || false,
-        "Match URL": isMatched ? dealsptrUrlMap.get(domain) || "" : "",
-        dataId: record.dataId,
+        "Match domain": isMatched ? domain : "",
+        "dealspotr URL": dealspotrUrl,
         Merchant_Name: record.storeName || null,
+        "NAPM?": isNapm,
+        "Affiliate ID": affiliateId,
       };
     });
 }
@@ -165,14 +176,16 @@ async function exportComparisonData(
   dealsptrUrlMap: Map<string, string>,
   csvOutputPath: string,
   jsonOutputPath: string,
-  competitorResults: CompetitorOverlap[]
+  competitorResults: CompetitorOverlap[],
+  affiliateData: Map<string, string>
 ): Promise<void> {
   console.log(`Exporting comparison data to CSV and JSON...`);
 
   const records = generateComparisonRecords(
     scrapeState,
     dealsptrDomains,
-    dealsptrUrlMap
+    dealsptrUrlMap,
+    affiliateData
   );
 
   // Calculate overlapping merchants with Amazon deals
@@ -195,9 +208,11 @@ async function exportComparisonData(
       { id: "Match_Status", title: "Match_Status" },
       { id: "Last_Segment", title: "Last_Segment" },
       { id: "3rd Party Link", title: "3rd Party Link" },
-      { id: "Match URL", title: "Match URL" },
-      { id: "dataId", title: "dataId" },
+      { id: "Match domain", title: "Match domain" },
       { id: "Merchant_Name", title: "Merchant Name" },
+      { id: "NAPM?", title: "NAPM?" },
+      { id: "Affiliate ID", title: "Affiliate ID" },
+      { id: "dealspotr URL", title: "dealspotr URL" },
     ],
   });
 
@@ -246,6 +261,10 @@ async function main() {
 
     // Build a map of domain names to DealsPotr URLs
     const dealsptrUrlMap = await buildDealsptrDomainUrlMap(dealsptrDomains);
+
+    // Load affiliate data
+    const affiliateData = await loadAffiliateData("affiliate-data.csv");
+    console.log(`Loaded ${affiliateData.size} affiliate data records`);
 
     // Extract domains from scrape-state.json
     const scrapeStateFilePath = path.join("output", "scrape-state.json");
@@ -325,7 +344,8 @@ async function main() {
       dealsptrUrlMap,
       path.join(csvOutputDir, "dontpayfull.com-comparison.csv"),
       path.join(outputDir, "dontpayfull.com-comparison.json"),
-      competitorResults
+      competitorResults,
+      affiliateData
     );
 
     console.log(
